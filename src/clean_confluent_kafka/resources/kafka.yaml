@@ -1,10 +1,11 @@
+{% if enable_consumer %}
 consumer:
   app:
-    debug: True
+    debug: False
 
-  topics: da-list-page-detection
-  group.id: consumer_group_test # consumer group
-  bootstrap.servers: 172.17.0.141:9092
+  topics: {{ consumer_topics }}
+  group.id: {{ consumer_group }} # consumer group
+  bootstrap.servers: {{ kafka_servers }}
 
   session.timeout.ms: 250000
   message:
@@ -53,18 +54,21 @@ consumer:
     max.bytes: 100000000
     message.max.bytes: 50
   partition.assignment.strategy: "range,roundrobin"
+{% endif %}
 
-
+{% if enable_producer %}
 producer:
   app:
     max_for_flush: 200
-  topic: test-produce #da-html-features
-  bootstrap.servers: 172.17.0.141:9092
+  topic: {{ producer_topic }}
+  bootstrap.servers: {{ kafka_servers }}
   message.max.bytes: 50000000
   batch.size: 5000000
   linger.ms: 5
   compression.type: snappy
   acks: 1
+{% endif %}
+
 
 
 app:

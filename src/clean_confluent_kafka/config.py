@@ -14,7 +14,9 @@ class KafkaConfigParser:
             config = yaml.safe_load(f)
         return KafkaConfigParser(config)
 
-    def __init__(self, config):
+    def __init__(self, config=None):
+        if config is None:
+            self.from_path("kafka.yaml")
         self.config = config
 
     def _get(self, name):

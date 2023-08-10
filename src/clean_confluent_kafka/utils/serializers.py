@@ -1,8 +1,8 @@
 import json
-from typing import AnyStr, Dict
+from typing import Dict
 
 
-def string_serializer(data: AnyStr, unicode: str = "utf-8"):
+def string_serializer(data: str, unicode: str = "utf-8"):
     return data.encode(unicode)
 
 
