@@ -24,10 +24,11 @@ class KafkaAction:
 
 class KafkaAdmin:
     def __init__(self, data_servers: List[str] | Dict[str, Any] | str):
+        config_key = "bootstrap.servers"
         if isinstance(data_servers, str):
-            self.user_configs = {"bootstrap.servers": data_servers}
+            self.user_configs = {config_key: data_servers}
         elif isinstance(data_servers, list):
-            self.user_configs = {"bootstrap.servers": ",".join(data_servers)}
+            self.user_configs = {config_key: ",".join(data_servers)}
         elif isinstance(data_servers, dict):
             self.user_configs = flatten_dict(data_servers)
         else:
@@ -98,7 +99,7 @@ def load_yaml_file(filename):
 
 
 class KafkaBroker:
-    _base_config_path = Path(__file__).parent / "resources" / "base-kafka.yaml"
+    _base_config_path = (Path(__file__).parent / "resources" / "base-kafka.yaml").as_posix()
 
     def __init__(self, config_path: str = "kafka.yaml", extra_configs: Optional[Dict[str, Any]] = None,
                  consumer_topics: Optional[str] = None, consumer_groups: Optional[str] = None,

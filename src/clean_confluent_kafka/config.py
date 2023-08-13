@@ -16,9 +16,8 @@ class KafkaConfigParser:
         return KafkaConfigParser(config)
 
     def __init__(self, config: Optional[Dict[str, Any]] = None):
-        if config is None:
-            self.config = dict()
-        self.config = config
+        self.config = config if config is not None else dict()
+
 
     def update_config(self, config: Dict[str, Any]):
         self.config.update(config)
