@@ -5,7 +5,7 @@ from jinja2 import Template
 
 
 class KafkaConfigsGenerator:
-    KAFKA_TEMPLATE_PATH = Path(__file__).parent / "resources" / "kafka.yaml"
+    KAFKA_TEMPLATE_PATH = Path(__file__).parent / "resources" / "kafka-template.yaml"
 
     def __init__(self, server_port: str):
         with open(self.KAFKA_TEMPLATE_PATH) as f:

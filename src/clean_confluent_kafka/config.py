@@ -1,4 +1,5 @@
 from collections import namedtuple
+from typing import Dict, Optional, Any
 
 from clean_confluent_kafka.utils import flatten_dict, reverse_flatten_dict
 
@@ -14,10 +15,13 @@ class KafkaConfigParser:
             config = yaml.safe_load(f)
         return KafkaConfigParser(config)
 
-    def __init__(self, config=None):
+    def __init__(self, config: Optional[Dict[str, Any]] = None):
         if config is None:
-            self.from_path("kafka.yaml")
+            self.config = dict()
         self.config = config
+
+    def update_config(self, config: Dict[str, Any]):
+        self.config.update(config)
 
     def _get(self, name):
         _configs = self.config.get(name, None)
@@ -43,3 +47,6 @@ class KafkaConfigParser:
             producer=self._create_parsed_config("producer"),
             app=app_configs
         )
+
+    def export_config(self):
+        return self.config

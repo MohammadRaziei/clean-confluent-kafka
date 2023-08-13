@@ -25,10 +25,11 @@ def ask(server: str = typer.Option(..., prompt=True)):
 
     save = typer.confirm("Do you want to save it?", default=True)
     if save:
-        save_path = typer.prompt("choose a save path ", default="kafka2.yaml", type=str)
+        save_path = typer.prompt("choose a save path ", default="kafka.yaml", type=str)
         gen.save(save_path)
     else:
         typer.echo(gen.text)
+
 
 @app.command(help="without prompt for configuration")
 def create(server: str,
@@ -37,8 +38,20 @@ def create(server: str,
            producer_topic: Optional[str] = None,
            save_path: Optional[str] = None,
            echo: bool = False):
-     print(server, consumer_topics, consumer_group,
-           consumer_topics, save_path, echo, producer_topic)
+    gen = KafkaConfigsGenerator(server)
+    if consumer_topics is not None:
+        gen.add_consumer(consumer_topics, consumer_group)
+    if producer_topic is not None:
+        gen.add_producer(producer_topic)
+    if save_path is None:
+        if echo:
+            typer.echo(gen.text)
+        else:
+            gen.save("kafka.yaml")
+    else:
+        text = gen.save(save_path)
+        if echo:
+            typer.echo(text)
 
 
 if __name__ == "__main__":
