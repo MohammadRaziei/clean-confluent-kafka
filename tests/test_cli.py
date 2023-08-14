@@ -9,4 +9,4 @@ def test_app():
     result = runner.invoke(app, ["create", "localhost:8080", "--consumer-topics", "mytopic",
                                  "--echo"])
     assert result.exit_code == 0
-    assert "group.id: mohammad_group" in result.stdout
+    assert "group.id: mytopic_group" in result.stdout

@@ -11,6 +11,8 @@ from clean_confluent_kafka.utils import flatten_dict, serializers
 
 logger = logging.getLogger(__name__)
 
+SERVER_KEY = "bootstrap.servers"
+
 
 class KafkaAction:
     def __init__(self, kafka_config, action, debug_mode: Optional[bool] = None):
@@ -24,11 +26,10 @@ class KafkaAction:
 
 class KafkaAdmin:
     def __init__(self, data_servers: List[str] | Dict[str, Any] | str):
-        config_key = "bootstrap.servers"
         if isinstance(data_servers, str):
-            self.user_configs = {config_key: data_servers}
+            self.user_configs = {SERVER_KEY: data_servers}
         elif isinstance(data_servers, list):
-            self.user_configs = {config_key: ",".join(data_servers)}
+            self.user_configs = {SERVER_KEY: ",".join(data_servers)}
         elif isinstance(data_servers, dict):
             self.user_configs = flatten_dict(data_servers)
         else:
@@ -44,8 +45,7 @@ class KafkaAdmin:
 
 class KafkaConsumer(KafkaAction):
     def __init__(self, kafka_config_consumer, topics: Optional[str | List] = None,
-                 consumer_group: Optional[str] = None, debug_mode: Optional[bool] = None):
-        kafka_config_consumer["group.id"] = consumer_group
+                 debug_mode: Optional[bool] = None):
         super().__init__(kafka_config_consumer, Consumer, debug_mode)
         self.topics = topics if topics is not None else self.user_configs.topic
         self.confluent.subscribe(self.topics)
@@ -105,16 +105,26 @@ class KafkaBroker:
                  consumer_topics: Optional[str] = None, consumer_groups: Optional[str] = None,
                  producer_topic: Optional[str] = None, use_base: bool = True):
         self.conf = KafkaConfigParser()
+
         if use_base:
             self.conf.update_config(load_yaml_file(self._base_config_path))
-        self.conf.update_config(load_yaml_file(config_path))
+        if Path(config_path).exists():
+            self.conf.update_config(load_yaml_file(config_path))
         if extra_configs is not None:
             self.conf.update_config(extra_configs)
+        if consumer_groups is not None:
+            self.conf.update_config({"consumer": {"group.id": consumer_groups}})
         self.kafka_config = self.conf.parse()
-        self.consumer = KafkaConsumer(self.kafka_config.consumer, topics=consumer_topics,
-                                      consumer_group=consumer_groups)
-        self.producer = KafkaProducer(self.kafka_config.producer, topic=producer_topic)
-        self.admin = KafkaAdmin(self.kafka_config.producer.config["bootstrap.servers"])
+
+        self.consumer = KafkaConsumer(self.kafka_config.consumer, topics=consumer_topics) \
+            if SERVER_KEY in self.kafka_config.consumer.config else None
+        self.producer = KafkaProducer(self.kafka_config.producer, topic=producer_topic) \
+            if SERVER_KEY in self.kafka_config.producer.config else None
+        server = self.kafka_config.producer.config.get("bootstrap.servers")
+        if server is None:
+            server = self.kafka_config.consumer.config.get()
+        self.server = server
+        self.admin = KafkaAdmin(self.server)
 
     def export_configs(self):
         return self.conf.export_config()

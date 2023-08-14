@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clean_confluent_kafka"
-dynamic = ["version"]
+dynamic = ["versiorn"]
 description = 'a clean interface for confluent_kafka'
 readme = "README.md"
 requires-python = ">=3.7"
 license = "MIT"
 keywords = []
 authors = [
-  { name = "m.raziei", email = "mohammadraziei1375@gmail.com" },
+  { name = "mohammadraziei", email = "mohammadraziei1375@gmail.com" },
 ]
 classifiers = [
   "Development Status :: 4 - Beta",

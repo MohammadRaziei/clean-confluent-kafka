@@ -1,13 +1,52 @@
-def reverse_flatten_dict(d, sep="."):
-    result = {}
+
+
+# def reverse_flatten_dict(flattened_dict, sep="."):
+#     hierarchical_dict = {}
+#     for key, value in flattened_dict.items():
+#         keys = key.split(sep)
+#         current_dict = hierarchical_dict
+#         for k in keys[:-1]:
+#             if k not in current_dict:
+#                 current_dict[k] = {}
+#             current_dict = current_dict[k]
+#         current_key = keys[-1]
+#         current_dict[current_key] = {'self': value}
+#     return hierarchical_dict
+
+
+def replace_self_with_value(d):
+    if isinstance(d, dict):
+        if len(d) == 1 and 'self' in d:
+            return d['self']
+        else:
+            for key, value in d.items():
+                d[key] = replace_self_with_value(value)
+    return d
+
+
+def reverse_flatten_dict(flattened_dict, sep="."):
+    hierarchical_dict = {}
+    for key, value in flattened_dict.items():
+        keys = key.split(sep)
+        current_dict = hierarchical_dict
+        for k in keys[:-1]:
+            if k not in current_dict:
+                current_dict[k] = {}
+            current_dict = current_dict[k]
+        current_key = keys[-1]
+        current_dict[current_key] = {'self': value}
+    return replace_self_with_value(hierarchical_dict)
+
+
+def unflatten_dict(d, sep="."):
+    result = dict()
     for key, value in d.items():
         parts = key.split(sep)
-        d = result
-        for part in parts[:-1]:
-            if part not in d:
-                d[part] = {}
-            d = d[part]
-        d[parts[-1]] = value
+        part = parts[0]
+        if part not in result:
+            result[part] = dict()
+        if len(parts) > 1:
+            result[part][sep.join(parts[1:])] = value
     return result
 
 
