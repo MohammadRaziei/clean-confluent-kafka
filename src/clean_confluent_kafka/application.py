@@ -1,4 +1,4 @@
-from clean_confluent_kafka.broker import KafkaBroker
+from clean_confluent_kafka.connection import KafkaBroker
 
 
 class KafkaApplication:

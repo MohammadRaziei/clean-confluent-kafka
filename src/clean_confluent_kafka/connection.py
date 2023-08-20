@@ -7,7 +7,7 @@ from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient
 
 from clean_confluent_kafka.config import KafkaConfigParser
-from clean_confluent_kafka.utils import flatten_dict, serializers
+from clean_confluent_kafka.utils import flatten_dict, serializers, deserializers
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,28 @@ class KafkaConsumer(KafkaAction):
         super().__init__(kafka_config_consumer, Consumer, debug_mode)
         self.topics = topics if topics is not None else self.user_configs.topic
         self.confluent.subscribe(self.topics)
+        self.deserializer = deserializers.json_deserializer
 
-    def consume(self):
+    def close(self):
+        self.confluent.close()
+
+    def __del__(self):
+        self.close()
+        if self.debug_mode:
+            logger.debug("Consumer closed")
+
+    def consume(self, deserializer=None):
+        if deserializer is None:
+            deserializer = self.deserializer
+
         while True:
             message = self.confluent.poll(timeout=1)
             if message is not None:
                 break
-        return message
+        return deserializer(message.value())
+
+    def commit(self):
+        self.confluent.commit()
 
 
 class KafkaProducer(KafkaAction):
@@ -70,23 +85,31 @@ class KafkaProducer(KafkaAction):
         self._max_for_flush = self.user_configs.app.get(self.KEY_MAX_FOR_FLUSH,
                                                         self.DEFAULT_MAX_FOR_FLUSH)
 
-    def produce(self, data, key=None, auto_flush: bool = True):
+    def __del__(self):
+        self.flush()
+
+    def flush(self):
+        self.confluent.flush()
+
+    def produce(self, data, key=None, auto_flush: bool = False, serializer=None):
+        if serializer is None:
+            serializer = self.serializer
         self._flush_counter = 0
         try:
-            self.confluent.produce(self.user_configs.topic, key=key, value=self.serializer(data))
+            self.confluent.produce(self.user_configs.topic, key=key, value=serializer(data))
             self.confluent.poll(0)
             self._flush_counter += 1
             if self._flush_counter >= self._max_for_flush:
-                self.confluent.flush()
+                self.flush()
                 self._flush_counter = 0
         except BufferError as bfer:
-            logger.warning(
+            logger.error(
                 "Error of full producer queue: %s",
                 str(bfer))
-            self.confluent.flush()
-            self.confluent.produce(self.user_configs.topic, key=key, value=self.serializer(data))
+            self.flush()
+            self.confluent.produce(self.user_configs.topic, key=key, value=serializer(data))
         if auto_flush:
-            self.confluent.flush()
+            self.flush()
 
     def set_max_for_flush(self, value: int):
         self._max_for_flush = value
@@ -98,17 +121,17 @@ def load_yaml_file(filename):
     return yaml_dict
 
 
-class KafkaBroker:
+class KafkaConnection:
     _base_config_path = (Path(__file__).parent / "resources" / "base-kafka.yaml").as_posix()
 
-    def __init__(self, config_path: str = "kafka.yaml", extra_configs: Optional[Dict[str, Any]] = None,
+    def __init__(self, config_path: Optional[str] = "kafka.yaml", extra_configs: Optional[Dict[str, Any]] = None,
                  consumer_topics: Optional[str] = None, consumer_groups: Optional[str] = None,
                  producer_topic: Optional[str] = None, use_base: bool = True):
         self.conf = KafkaConfigParser()
 
         if use_base:
             self.conf.update_config(load_yaml_file(self._base_config_path))
-        if Path(config_path).exists():
+        if (config_path is not None) and Path(config_path).exists():
             self.conf.update_config(load_yaml_file(config_path))
         if extra_configs is not None:
             self.conf.update_config(extra_configs)
@@ -120,20 +143,34 @@ class KafkaBroker:
             if SERVER_KEY in self.kafka_config.consumer.config else None
         self.producer = KafkaProducer(self.kafka_config.producer, topic=producer_topic) \
             if SERVER_KEY in self.kafka_config.producer.config else None
-        server = self.kafka_config.producer.config.get("bootstrap.servers")
+        server = self.kafka_config.producer.config.get(SERVER_KEY)
         if server is None:
-            server = self.kafka_config.consumer.config.get()
+            server = self.kafka_config.consumer.config.get(SERVER_KEY)
         self.server = server
         self.admin = KafkaAdmin(self.server)
 
-    def export_configs(self):
-        return self.conf.export_config()
+    def export_configs(self, flatten=True):
+        return self.conf.export_config(flatten=flatten)
 
     def consume(self, *args, **kwargs):
+        if self.consumer is None:
+            raise NotImplementedError
         return self.consumer.consume(*args, **kwargs)
 
     def produce(self, *args, **kwargs):
+        if self.producer is None:
+            raise NotImplementedError
         return self.producer.produce(*args, **kwargs)
+
+    def commit(self):
+        if self.consumer is None:
+            raise NotImplementedError
+        return self.consumer.commit()
+
+    def flush(self):
+        if self.consumer is None:
+            raise NotImplementedError
+        return self.producer.flush()
 
     def get_topics(self):
         return self.admin.get_topic()

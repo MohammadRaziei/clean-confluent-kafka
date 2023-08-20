@@ -48,6 +48,9 @@ class KafkaConfigParser:
             producer=self._create_parsed_config("producer"),
             app=app_configs
         )
+        # self.config = flatten_dict(self.config)
 
-    def export_config(self):
-        return reverse_flatten_dict(self.config)
+    def export_config(self, flatten=True):
+        # config = flatten_dict(self.config)
+        config = flatten_dict(self.config) if flatten else reverse_flatten_dict(self.config)
+        return config
