@@ -1,17 +1,16 @@
 
 
-# def reverse_flatten_dict(flattened_dict, sep="."):
-#     hierarchical_dict = {}
-#     for key, value in flattened_dict.items():
-#         keys = key.split(sep)
-#         current_dict = hierarchical_dict
-#         for k in keys[:-1]:
-#             if k not in current_dict:
-#                 current_dict[k] = {}
-#             current_dict = current_dict[k]
-#         current_key = keys[-1]
-#         current_dict[current_key] = {'self': value}
-#     return hierarchical_dict
+import yaml
+
+import fastnumbers
+
+
+def convert_string_to_yaml_number(string):
+    return yaml.safe_load(string)
+
+
+def convert_string_to_real_number(string):
+    return fastnumbers.try_real(string, on_fail=fastnumbers.INPUT)
 
 
 def replace_self_with_value(d):
@@ -60,3 +59,4 @@ def flatten_dict(hierarchical_dict, parent_key="", sep="."):
         else:
             items.append((new_key, value))
     return dict(items)
+

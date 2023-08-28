@@ -1,7 +1,18 @@
 from collections import namedtuple
 from typing import Dict, Optional, Any
+import os, json
 
 from clean_confluent_kafka.utils import flatten_dict, reverse_flatten_dict, unflatten_dict
+from clean_confluent.kafka.utils import convert_string_to_real_number as string_handler
+
+
+def update_conf_dict_with_env(conf_dict, key_prefix=""):
+    for key in conf_dict:
+        # Check if the key is defined in the environment
+        key_env = (key_prefix + key.replace(".", "_")).upper()
+        env_var = os.environ.get(key_env, None)
+        if env_var is not None:
+            conf_dict[key] = string_handler(env_var)
 
 
 class KafkaConfigParser:

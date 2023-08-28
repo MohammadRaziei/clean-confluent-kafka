@@ -6,7 +6,7 @@ import yaml
 from confluent_kafka import Consumer, Producer
 from confluent_kafka.admin import AdminClient
 
-from clean_confluent_kafka.config import KafkaConfigParser
+from clean_confluent_kafka.config import KafkaConfigParser, update_conf_dict_with_env
 from clean_confluent_kafka.utils import flatten_dict, serializers, deserializers
 
 logger = logging.getLogger(__name__)
@@ -137,6 +137,8 @@ class KafkaConnection:
             self.conf.update_config(extra_configs)
         if consumer_groups is not None:
             self.conf.update_config({"consumer": {"group.id": consumer_groups}})
+        update_conf_dict_with_env(self.conf.config)
+
         self.kafka_config = self.conf.parse()
 
         self.consumer = KafkaConsumer(self.kafka_config.consumer, topics=consumer_topics) \

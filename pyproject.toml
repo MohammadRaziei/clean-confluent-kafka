@@ -25,7 +25,10 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-  "confluent-kafka", "jinja2", "PyYaml"
+  "confluent-kafka",
+  "jinja2",
+  "PyYaml",
+  "fastnumbers"
 ]
 
 [project.urls]
