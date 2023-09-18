@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Optional
 from pathlib import Path
@@ -69,6 +71,9 @@ class KafkaConsumer(KafkaAction):
                 break
         return deserializer(message.value())
 
+    def __call__(self, deserializer=None):
+        self.consume(deserializer=deserializer)
+
     def commit(self):
         self.confluent.commit()
 
@@ -111,6 +116,9 @@ class KafkaProducer(KafkaAction):
         if auto_flush:
             self.flush()
 
+    def __call__(self, data, key=None, auto_flush: bool = False, serializer=None):
+        self.produce(data, key=key, auto_flush=auto_flush, serializer=serializer)
+
     def set_max_for_flush(self, value: int):
         self._max_for_flush = value
 
@@ -141,9 +149,11 @@ class KafkaConnection:
 
         self.kafka_config = self.conf.parse()
 
-        self.consumer = KafkaConsumer(self.kafka_config.consumer, topics=consumer_topics) \
-            if SERVER_KEY in self.kafka_config.consumer.config else None
-        self.producer = KafkaProducer(self.kafka_config.producer, topic=producer_topic) \
+        #TODO: fuck it
+        if self.kafka_config.consumer:
+            self.consume = KafkaConsumer(self.kafka_config.consumer, topics=consumer_topics) \
+                if SERVER_KEY in self.kafka_config.consumer.config else None
+        self.produce = KafkaProducer(self.kafka_config.producer, topic=producer_topic) \
             if SERVER_KEY in self.kafka_config.producer.config else None
         server = self.kafka_config.producer.config.get(SERVER_KEY)
         if server is None:
@@ -154,15 +164,15 @@ class KafkaConnection:
     def export_configs(self, flatten=True):
         return self.conf.export_config(flatten=flatten)
 
-    def consume(self, *args, **kwargs):
-        if self.consumer is None:
-            raise NotImplementedError
-        return self.consumer.consume(*args, **kwargs)
+    # def consume(self, *args, **kwargs):
+    #     if self.consumer is None:
+    #         raise NotImplementedError
+    #     return self.consumer.consume(*args, **kwargs)
 
-    def produce(self, *args, **kwargs):
-        if self.producer is None:
-            raise NotImplementedError
-        return self.producer.produce(*args, **kwargs)
+    # def produce(self, *args, **kwargs):
+    #     if self.producer is None:
+    #         raise NotImplementedError
+    #     return self.producer.produce(*args, **kwargs)
 
     def commit(self):
         if self.consumer is None:

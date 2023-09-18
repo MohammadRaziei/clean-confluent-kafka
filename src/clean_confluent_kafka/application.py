@@ -1,9 +1,10 @@
-from clean_confluent_kafka.connection import KafkaBroker
+from __future__ import annotations
+from clean_confluent_kafka.connection import KafkaConnection
 
 
 class KafkaApplication:
     def __init__(self, *args, **kwargs):
-        self.broker = KafkaBroker(*args, **kwargs)
+        self.broker = KafkaConnection(*args, **kwargs)
         raise NotImplementedError
 
     def consume(self):

@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 from collections import namedtuple
 from typing import Dict, Optional, Any
-import os, json
+import os
 
 from clean_confluent_kafka.utils import flatten_dict, reverse_flatten_dict, unflatten_dict
-from clean_confluent.kafka.utils import convert_string_to_real_number as string_handler
+from clean_confluent_kafka.utils import convert_string_to_real_number as string_handler
 
 
 def update_conf_dict_with_env(conf_dict, key_prefix=""):
